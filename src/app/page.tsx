@@ -1,103 +1,418 @@
-import Image from "next/image";
+"use client";
+
+import { useState, useEffect } from "react";
+import CanvasBoard from "@/components/CanvasBoard";
 
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [canvasSize, setCanvasSize] = useState({ width: 800, height: 600 });
+  const [tool, setTool] = useState("pen");
+  const [color, setColor] = useState("#000000");
+  const [brushSize, setBrushSize] = useState(5);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+  // Handle responsive canvas sizing
+  useEffect(() => {
+    const updateCanvasSize = () => {
+      const maxWidth = window.innerWidth * 0.9;
+      const maxHeight = window.innerHeight * 0.8;
+      
+      let newWidth = 800;
+      let newHeight = 600;
+      
+      // Adjust aspect ratio if needed
+      if (maxWidth < newWidth) {
+        const ratio = maxWidth / newWidth;
+        newWidth = maxWidth;
+        newHeight = 600 * ratio;
+      }
+      
+      if (maxHeight < newHeight) {
+        const ratio = maxHeight / newHeight;
+        newHeight = maxHeight;
+        newWidth = 800 * ratio;
+      }
+      
+      setCanvasSize({ width: newWidth, height: newHeight });
+    };
+
+    updateCanvasSize();
+    window.addEventListener('resize', updateCanvasSize);
+    
+    return () => {
+      window.removeEventListener('resize', updateCanvasSize);
+    };
+  }, []);
+
+  // Export functionality
+  const exportCanvas = (format: string) => {
+    const canvas = document.querySelector('canvas');
+    if (!canvas) return;
+    
+    const link = document.createElement('a');
+    link.download = `canvas.${format}`;
+    
+    if (format === 'jpeg') {
+      format = 'image/jpeg';
+    } else if (format === 'webp') {
+      format = 'image/webp';
+    } else {
+      format = 'image/png';
+    }
+    
+    link.href = canvas.toDataURL(format);
+    link.click();
+  };
+
+  // Clear canvas
+  const clearCanvas = () => {
+    // Trigger clear canvas in the CanvasBoard component
+    const canvas = document.querySelector('canvas');
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // Fill with white background
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  };
+
+  return (
+    <div className="container-fluid">
+      {/* Top menu bar for mobile */}
+      <div className="top-menu mobile-only">
+        <button 
+          className="mobile-menu-btn" 
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        >
+          ☰ Menu
+        </button>
+        <h1 className="logo">aicanvas</h1>
+      </div>
+
+      <div className="main-content row">
+        {/* Sidebar menu for PC, hidden on mobile */}
+        <aside className="sidebar col-2 desktop-only">
+          <h2>Tools</h2>
+          <div className="tool-group">
+            <label>Tool:</label>
+            <select 
+              value={tool} 
+              onChange={(e) => setTool(e.target.value)}
+              className="form-control"
+            >
+              <option value="pen">Pen</option>
+              <option value="eraser">Eraser</option>
+            </select>
+          </div>
+          
+          <div className="tool-group">
+            <label>Color:</label>
+            <input 
+              type="color" 
+              value={color} 
+              onChange={(e) => setColor(e.target.value)}
+              className="form-control"
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
+          </div>
+          
+          <div className="tool-group">
+            <label>Brush Size:</label>
+            <input 
+              type="range" 
+              min="1" 
+              max="50" 
+              value={brushSize} 
+              onChange={(e) => setBrushSize(parseInt(e.target.value))}
+              className="form-control"
+            />
+            <span>{brushSize}px</span>
+          </div>
+          
+          <div className="tool-group">
+            <button 
+              className="btn btn-primary full-width"
+              onClick={clearCanvas}
+            >
+              Clear Canvas
+            </button>
+          </div>
+          
+          <div className="tool-group">
+            <h3>Export</h3>
+            <button 
+              className="btn btn-success full-width"
+              onClick={() => exportCanvas('png')}
+            >
+              Export as PNG
+            </button>
+            <button 
+              className="btn btn-success full-width"
+              onClick={() => exportCanvas('jpeg')}
+            >
+              Export as JPEG
+            </button>
+            <button 
+              className="btn btn-success full-width"
+              onClick={() => exportCanvas('webp')}
+            >
+              Export as WebP
+            </button>
+          </div>
+        </aside>
+
+        {/* Mobile menu overlay */}
+        {isMobileMenuOpen && (
+          <div className="mobile-menu-overlay">
+            <div className="mobile-menu-content">
+              <div className="tool-group">
+                <label>Tool:</label>
+                <select 
+                  value={tool} 
+                  onChange={(e) => setTool(e.target.value)}
+                  className="form-control"
+                >
+                  <option value="pen">Pen</option>
+                  <option value="eraser">Eraser</option>
+                </select>
+              </div>
+              
+              <div className="tool-group">
+                <label>Color:</label>
+                <input 
+                  type="color" 
+                  value={color} 
+                  onChange={(e) => setColor(e.target.value)}
+                  className="form-control"
+                />
+              </div>
+              
+              <div className="tool-group">
+                <label>Brush Size:</label>
+                <input 
+                  type="range" 
+                  min="1" 
+                  max="50" 
+                  value={brushSize} 
+                  onChange={(e) => setBrushSize(parseInt(e.target.value))}
+                  className="form-control"
+                />
+                <span>{brushSize}px</span>
+              </div>
+              
+              <div className="tool-group">
+                <button 
+                  className="btn btn-primary full-width"
+                  onClick={clearCanvas}
+                >
+                  Clear Canvas
+                </button>
+              </div>
+              
+              <div className="tool-group">
+                <h3>Export</h3>
+                <button 
+                  className="btn btn-success full-width"
+                  onClick={() => exportCanvas('png')}
+                >
+                  Export as PNG
+                </button>
+                <button 
+                  className="btn btn-success full-width"
+                  onClick={() => exportCanvas('jpeg')}
+                >
+                  Export as JPEG
+                </button>
+                <button 
+                  className="btn btn-success full-width"
+                  onClick={() => exportCanvas('webp')}
+                >
+                  Export as WebP
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Canvas area */}
+        <main className="canvas-area col-10">
+          <CanvasBoard 
+            width={canvasSize.width} 
+            height={canvasSize.height} 
+            tool={tool}
+            color={tool === 'eraser' ? '#FFFFFF' : color}
+            brushSize={brushSize}
           />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+        </main>
+      </div>
+
+      <style jsx>{`
+        .top-menu {
+          display: none;
+          flex-direction: row;
+          justify-content: space-between;
+          align-items: center;
+          padding: 10px 20px;
+          background-color: #f8f9fa;
+          border-bottom: 1px solid #dee2e6;
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          z-index: 999;
+        }
+        
+        .mobile-menu-btn {
+          background: #007bff;
+          color: white;
+          border: none;
+          padding: 8px 15px;
+          border-radius: 4px;
+          cursor: pointer;
+          font-size: 16px;
+        }
+        
+        .desktop-only {
+          display: block;
+        }
+        
+        .mobile-only {
+          display: none;
+        }
+        
+        .main-content {
+          display: flex;
+          min-height: 100vh;
+          margin-top: 0;
+          padding-top: 60px;
+        }
+        
+        .sidebar {
+          background-color: #f8f9fa;
+          padding: 20px;
+          min-height: calc(100vh - 60px);
+          width: 250px;
+          overflow-y: auto;
+          border-right: 1px solid #dee2e6;
+        }
+        
+        .canvas-area {
+          display: flex;
+          justify-content: center;
+          align-items: flex-start;
+          padding: 20px;
+          background-color: #e9ecef;
+          flex: 1;
+          overflow: auto;
+        }
+        
+        .tool-group {
+          margin-bottom: 20px;
+        }
+        
+        .tool-group label {
+          display: block;
+          margin-bottom: 8px;
+          font-weight: bold;
+          color: #495057;
+        }
+        
+        .tool-group input, 
+        .tool-group select {
+          width: 100%;
+          margin-bottom: 8px;
+          padding: 8px;
+          border: 1px solid #ced4da;
+          border-radius: 4px;
+          font-size: 14px;
+        }
+        
+        .tool-group span {
+          display: block;
+          text-align: center;
+          margin-top: 5px;
+          font-size: 14px;
+          color: #6c757d;
+        }
+        
+        .full-width {
+          width: 100%;
+          margin-bottom: 10px;
+          padding: 10px;
+        }
+        
+        .mobile-menu-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background-color: rgba(0,0,0,0.7);
+          z-index: 1000;
+          display: flex;
+          justify-content: center;
+          align-items: flex-start;
+          padding-top: 60px;
+        }
+        
+        .mobile-menu-content {
+          background-color: white;
+          width: 85%;
+          max-width: 320px;
+          padding: 20px;
+          border-radius: 8px;
+          max-height: 80vh;
+          overflow-y: auto;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+        
+        .logo {
+          margin: 0;
+          color: #007bff;
+          font-size: 24px;
+          font-weight: bold;
+        }
+        
+        /* Mobile styles */
+        @media (max-width: 768px) {
+          .top-menu {
+            display: flex;
+          }
+          
+          .desktop-only {
+            display: none;
+          }
+          
+          .mobile-only {
+            display: flex;
+          }
+          
+          .main-content {
+            flex-direction: column;
+            padding-top: 60px;
+          }
+          
+          .sidebar {
+            display: none;
+          }
+          
+          .canvas-area {
+            width: 100%;
+            padding: 10px;
+            min-height: calc(100vh - 60px);
+          }
+          
+          .tool-group h3 {
+            font-size: 1.2em;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #495057;
+            border-bottom: 1px solid #dee2e6;
+            padding-bottom: 5px;
+          }
+        }
+      `}</style>
     </div>
   );
 }
